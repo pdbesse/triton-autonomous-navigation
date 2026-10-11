@@ -78,7 +78,7 @@ void Vessel::setHeading(double heading)
 
 void Vessel::setSpeed(double speed)
 {
-    if (!std::isfinite(speed) || speed <= 0.0)
+    if (!std::isfinite(speed) || speed < 0.0)
     {
         throw std::invalid_argument("Invalid speed");
     }
@@ -86,6 +86,7 @@ void Vessel::setSpeed(double speed)
     speed_ = speed;
 }
 
-double Vessel::getSpeed() const {
+double Vessel::getSpeed() const
+{
     return speed_;
 }
