@@ -13,6 +13,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Shared vessel simulation library
 add_library(triton_core
     src/Vessel.cpp
+    src/NavigationController.cpp
 )
 
 target_include_directories(triton_core PUBLIC
