@@ -20,6 +20,9 @@ public:
 
     Position getPosition() const;
 
+    void setHeading(double heading);
+    void setSpeed (double speed);
+
 private:
     std::string name_;
     Position position_;
