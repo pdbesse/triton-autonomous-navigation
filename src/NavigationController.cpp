@@ -1,12 +1,12 @@
+
 #include "NavigationController.h"
 
-#include <algorithm>
 #include <cmath>
 #include <stdexcept>
 
 namespace {
-    constexpr double PI = 3.14159265358979323846;
-    constexpr double EPSILON = 1e-9;
+constexpr double PI = 3.14159265358979323846;
+constexpr double EPSILON = 1e-9;
 }
 
 double NavigationController::calculateDistance(
@@ -29,7 +29,7 @@ double NavigationController::calculateBearing(
     double bearing = std::atan2(dx, dy) * 180.0 / PI;
 
     if (bearing < 0.0) {
-        bearing += 360;
+        bearing += 360.0;
     }
 
     return bearing;
@@ -50,19 +50,28 @@ void NavigationController::navigateTo(
         current, destination
     );
 
+    // Already at the destination
     if (distance < EPSILON) {
         vessel.setSpeed(0.0);
         return;
     }
 
+    // Calculate heading toward destination
     const double bearing = calculateBearing(
         current, destination
     );
 
     vessel.setHeading(bearing);
 
-    // Vessel speed is in knots (NM/hour).
-    // Limit movement to the remaining distance
-    
-    vessel.update(elapsedHours);
+    // Calculate maximum travel distance
+    const double maximumDistance =
+        vessel.getSpeed() * elapsedHours;
+
+    // Prevent overshooting the waypoint
+    if (maximumDistance >= distance) {
+        vessel.update(distance / vessel.getSpeed());
+        vessel.setSpeed(0.0);
+    } else {
+        vessel.update(elapsedHours);
+    }
 }
