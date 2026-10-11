@@ -6,8 +6,9 @@
 #include <stdexcept>
 #include <utility>
 
-namespace {
-constexpr double PI = 3.14159265358979323846;
+namespace
+{
+    constexpr double PI = 3.14159265358979323846;
 }
 
 Vessel::Vessel(std::string name,
@@ -17,19 +18,23 @@ Vessel::Vessel(std::string name,
     : name_(std::move(name)),
       position_(position),
       speed_(speed),
-      heading_(heading) {
+      heading_(heading)
+{
 
     if (!std::isfinite(position.x) ||
         !std::isfinite(position.y) ||
         !std::isfinite(speed_) ||
         !std::isfinite(heading_) ||
-        speed_ < 0.0) {
+        speed_ < 0.0)
+    {
         throw std::invalid_argument("Invalid vessel parameters");
     }
 }
 
-void Vessel::update(double elapsedHours) {
-    if (!std::isfinite(elapsedHours) || elapsedHours < 0.0) {
+void Vessel::update(double elapsedHours)
+{
+    if (!std::isfinite(elapsedHours) || elapsedHours < 0.0)
+    {
         throw std::invalid_argument("Invalid elapsed time");
     }
 
@@ -41,15 +46,42 @@ void Vessel::update(double elapsedHours) {
     position_.y += distance * std::cos(radians);
 }
 
-Position Vessel::getPosition() const {
+Position Vessel::getPosition() const
+{
     return position_;
 }
 
-void Vessel::displayStatus() const {
+void Vessel::displayStatus() const
+{
     std::cout << "Vessel: " << name_ << '\n';
     std::cout << "Speed: " << speed_ << " knots\n";
     std::cout << "Heading: " << heading_ << " degrees\n";
     std::cout << "Position: ("
               << position_.x << ", "
               << position_.y << ") NM\n";
+}
+
+void Vessel::setHeading(double heading)
+{
+    if (!std::isfinite(heading))
+    {
+        throw std::invalid_argument("Invalid heading:");
+    }
+
+    heading_ = std::fmod(heading, 360.0);
+
+    if (heading_ < 0.0)
+    {
+        heading_ += 360.0;
+    }
+}
+
+void Vessel::setSpeed(double speed)
+{
+    if (!std::isfinite(speed) || speed <= 0.0)
+    {
+        throw std::invalid_argument("Invalid speed");
+    }
+
+    speed_ = speed;
 }
