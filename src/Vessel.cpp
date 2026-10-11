@@ -85,3 +85,7 @@ void Vessel::setSpeed(double speed)
 
     speed_ = speed;
 }
+
+double Vessel::getSpeed() const {
+    return speed_;
+}

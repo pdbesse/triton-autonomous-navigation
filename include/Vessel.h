@@ -19,9 +19,10 @@ public:
     void displayStatus() const;
 
     Position getPosition() const;
+    double getSpeed() const;
 
     void setHeading(double heading);
-    void setSpeed (double speed);
+    void setSpeed(double speed);
 
 private:
     std::string name_;
