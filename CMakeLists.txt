@@ -41,6 +41,21 @@ add_test(
     COMMAND vessel_tests
 )
 
+
+add_executable(navigation_tests
+    tests/NavigationTests.cpp
+)
+
+target_link_libraries(navigation_tests
+    PRIVATE triton_core
+)
+
+add_test(
+    NAME NavigationTests
+    COMMAND navigation_tests
+)
+
+
 # Compiler warnings
 if(MSVC)
     target_compile_options(triton_core PRIVATE /W4)
