@@ -4,7 +4,8 @@
 #include <cmath>
 #include <stdexcept>
 
-namespace {
+namespace
+{
     // Conversion constant for radians and degrees.
     constexpr double PI = 3.14159265358979323846;
 
@@ -32,12 +33,11 @@ namespace {
  */
 double NavigationController::calculateDistance(
     Position start,
-    Position destination
-) {
+    Position destination)
+{
     return std::hypot(
         destination.x - start.x,
-        destination.y - start.y
-    );
+        destination.y - start.y);
 }
 
 /*
@@ -57,14 +57,15 @@ double NavigationController::calculateDistance(
  */
 double NavigationController::calculateBearing(
     Position start,
-    Position destination
-) {
+    Position destination)
+{
     const double dx = destination.x - start.x;
     const double dy = destination.y - start.y;
 
     double bearing = std::atan2(dx, dy) * 180.0 / PI;
 
-    if (bearing < 0.0) {
+    if (bearing < 0.0)
+    {
         bearing += 360.0;
     }
 
@@ -92,11 +93,12 @@ double NavigationController::calculateBearing(
  *   coordinate system as the vessel.
  */
 void NavigationController::navigateTo(
-    Vessel& vessel,
+    Vessel &vessel,
     Position destination,
-    double elapsedHours
-) {
-    if (!std::isfinite(elapsedHours) || elapsedHours < 0.0) {
+    double elapsedHours)
+{
+    if (!std::isfinite(elapsedHours) || elapsedHours < 0.0)
+    {
         throw std::invalid_argument("Invalid elapsed time");
     }
 
@@ -105,22 +107,21 @@ void NavigationController::navigateTo(
 
     // Determine how far the vessel is from its target.
     const double distance = calculateDistance(
-        current, destination
-    );
+        current, destination);
 
     /*
      * If the vessel is already at the waypoint,
      * stop immediately to avoid unnecessary movement.
      */
-    if (distance < EPSILON) {
+    if (distance < EPSILON)
+    {
         vessel.setSpeed(0.0);
         return;
     }
 
     // Calculate the direction toward the destination.
     const double bearing = calculateBearing(
-        current, destination
-    );
+        current, destination);
 
     // Command the vessel to face the waypoint.
     vessel.setHeading(bearing);
@@ -143,10 +144,13 @@ void NavigationController::navigateTo(
      *
      * Otherwise, advance for the full allotted time.
      */
-    if (maximumDistance >= distance) {
+    if (maximumDistance >= distance)
+    {
         vessel.update(distance / vessel.getSpeed());
         vessel.setSpeed(0.0);
-    } else {
+    }
+    else
+    {
         vessel.update(elapsedHours);
     }
 
@@ -160,4 +164,100 @@ void NavigationController::navigateTo(
      * better distinction between cruising speed and
      * stopping at the final destination.
      */
+}
+
+/*
+ * navigateRoute()
+ *
+ * Advances the vessel through an ordered route.
+ *
+ * Each waypoint is processed using the remaining simulation
+ * time. When an intermediate waypoint is reached, the vessel
+ * continues toward the next one at its current speed.
+ *
+ * Assumptions:
+ * - Constant speed during each navigation update.
+ * - Instantaneous heading changes at waypoints.
+ * - No obstacles, currents, or acceleration.
+ */
+void NavigationController::navigateRoute(
+    Vessel &vessel,
+    Route &route,
+    double elapsedHours)
+{
+    if (!std::isfinite(elapsedHours) || elapsedHours < 0.0)
+    {
+        throw std::invalid_argument("Invalid elapsed time");
+    }
+
+    double remainingHours = elapsedHours;
+
+    // An empty or previously completed route requires no travel.
+    if (route.isComplete())
+    {
+        vessel.setSpeed(0.0);
+        return;
+    }
+
+    /*
+     * A stopped vessel cannot travel toward a waypoint.
+     * Reject that condition unless already at the waypoint.
+     */
+    while (!route.isComplete())
+    {
+        const Position destination = route.currentWaypoint();
+        const Position current = vessel.getPosition();
+
+        const double distance =
+            calculateDistance(current, destination);
+
+        // Advance past a waypoint we're already occupying.
+        if (distance < EPSILON)
+        {
+            route.advance();
+            continue;
+        }
+
+        const double speed = vessel.getSpeed();
+
+        if (speed <= 0.0 || remainingHours <= 0.0)
+        {
+            break;
+        }
+
+        // Turn directly toward the current waypoint.
+        vessel.setHeading(
+            calculateBearing(current, destination));
+
+        // Calculate the time required to reach it.
+        const double travelHours = distance / speed;
+
+        if (travelHours <= remainingHours)
+        {
+            /*
+             * We can reach this waypoint during the
+             * current simulation update.
+             */
+            vessel.update(travelHours);
+
+            remainingHours -= travelHours;
+            route.advance();
+        }
+        else
+        {
+            /*
+             * Not enough time remains to reach the waypoint.
+             * Move partway and resume on the next update.
+             */
+            vessel.update(remainingHours);
+            remainingHours = 0.0;
+            break;
+        }
+    }
+
+    // Stop only after the entire route is completed.
+    if (route.isComplete())
+    {
+        vessel.setSpeed(0.0);
+    }
 }

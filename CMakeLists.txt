@@ -25,6 +25,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_library(triton_core
     src/Vessel.cpp
     src/NavigationController.cpp
+    src/Route.cpp
 )
 
 # Make public header files available to triton_core and
@@ -82,6 +83,21 @@ add_test(
     NAME NavigationTests
     COMMAND navigation_tests
 )
+
+# Build and register automated route navigation tests.
+add_executable(route_tests
+    tests/RouteTests.cpp
+)
+
+target_link_libraries(route_tests
+    PRIVATE triton_core
+)
+
+add_test(
+    NAME RouteTests
+    COMMAND route_tests
+)
+
 
 # ------------------------------------------------------------
 # Compiler diagnostics

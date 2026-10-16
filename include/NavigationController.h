@@ -1,65 +1,60 @@
 
 #pragma once
 
+#include "Route.h"
 #include "Vessel.h"
 
 /*
  * NavigationController
  * --------------------
- * Provides basic waypoint navigation for a Vessel.
+ * Calculates bearings, distances, and vessel movements.
  *
- * This class separates navigation decisions from the
- * Vessel class's responsibility for physical movement.
+ * Supports:
+ * - Navigation toward a single waypoint.
+ * - Navigation through an ordered route.
  *
- * Current capabilities:
- * - Calculate straight-line distance to a destination.
- * - Calculate a nautical bearing toward a destination.
- * - Move a vessel toward one waypoint.
+ * Coordinate system:
+ * x = East/West nautical miles
+ * y = North/South nautical miles
  *
- * The methods are static because the controller currently
- * stores no internal state.
- *
- * This is a simplified 2D navigation model, not a full
- * maritime navigation or collision-avoidance system.
+ * Headings are measured clockwise from North.
  */
 class NavigationController {
 public:
-    /*
-     * Calculate Euclidean distance between two positions.
-     *
-     * Inputs and output are in nautical miles.
-     */
+    // Straight-line distance between two positions, in NM.
     static double calculateDistance(
         Position start,
         Position destination
     );
 
-    /*
-     * Calculate the bearing from start to destination.
-     *
-     * Returns degrees clockwise from North in [0, 360).
-     * A coincident start and destination yields 0 degrees.
-     */
+    // Bearing clockwise from North, in degrees.
     static double calculateBearing(
         Position start,
         Position destination
     );
 
     /*
-     * Navigate a vessel toward one destination.
+     * Navigate toward one waypoint.
      *
-     * The vessel turns directly toward the waypoint,
-     * then moves for up to elapsedHours.
-     *
-     * If it can reach the waypoint within the allotted
-     * time, it stops instead of traveling past it.
-     *
-     * Vessel is passed by reference so this function
-     * modifies the original object rather than a copy.
+     * Stops the vessel when the destination is reached.
      */
     static void navigateTo(
         Vessel& vessel,
         Position destination,
+        double elapsedHours
+    );
+
+    /*
+     * Navigate through multiple waypoints.
+     *
+     * Continues through intermediate waypoints without
+     * stopping, provided simulation time remains.
+     *
+     * Stops the vessel after the final waypoint.
+     */
+    static void navigateRoute(
+        Vessel& vessel,
+        Route& route,
         double elapsedHours
     );
 };
