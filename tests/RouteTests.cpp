@@ -8,15 +8,18 @@
 #include <iostream>
 #include <stdexcept>
 
-namespace {
-constexpr double TOLERANCE = 1e-6;
+namespace
+{
+    constexpr double TOLERANCE = 1e-6;
 
-bool approximatelyEqual(double a, double b) {
-    return std::abs(a - b) < TOLERANCE;
-}
+    bool approximatelyEqual(double a, double b)
+    {
+        return std::abs(a - b) < TOLERANCE;
+    }
 }
 
-int main() {
+int main()
+{
     // Test 1: An empty route is complete.
     {
         Route route;
@@ -91,9 +94,12 @@ int main() {
         Route route;
         bool threw = false;
 
-        try {
+        try
+        {
             route.addWaypoint({NAN, 0.0});
-        } catch (const std::invalid_argument&) {
+        }
+        catch (const std::invalid_argument &)
+        {
             threw = true;
         }
 
@@ -105,15 +111,112 @@ int main() {
         Route route;
         bool threw = false;
 
-        try {
+        try
+        {
             route.advance();
-        } catch (const std::out_of_range&) {
+        }
+        catch (const std::out_of_range &)
+        {
             threw = true;
         }
 
         assert(threw);
     }
 
-    std::cout << "All route tests passed!\n";
+    // Test 7: Completed status after reaching final waypoint.
+    {
+        Vessel vessel("Test", {0.0, 0.0}, 10.0, 0.0);
+
+        Route route;
+        route.addWaypoint({0.0, 5.0});
+
+        NavigationStatus status =
+            NavigationController::navigateRoute(vessel, route, 1.0);
+
+        assert(status == NavigationStatus::Completed);
+        assert(route.isComplete());
+        assert(approximatelyEqual(vessel.getSpeed(), 0.0));
+        assert(approximatelyEqual(vessel.getPosition().y, 5.0));
+    }
+
+    // Test 8: InProgress when time is insufficient.
+    {
+        Vessel vessel("Test", {0.0, 0.0}, 10.0, 0.0);
+
+        Route route;
+        route.addWaypoint({0.0, 20.0});
+
+        NavigationStatus status =
+            NavigationController::navigateRoute(vessel, route, 0.5);
+
+        assert(status == NavigationStatus::InProgress);
+        assert(!route.isComplete());
+        assert(approximatelyEqual(vessel.getPosition().y, 5.0));
+        assert(approximatelyEqual(vessel.getSpeed(), 10.0));
+    }
+
+    // Test 9: Stalled when vessel speed is zero.
+    {
+        Vessel vessel("Test", {0.0, 0.0}, 0.0, 0.0);
+
+        Route route;
+        route.addWaypoint({0.0, 10.0});
+
+        NavigationStatus status =
+            NavigationController::navigateRoute(vessel, route, 1.0);
+
+        assert(status == NavigationStatus::Stalled);
+        assert(!route.isComplete());
+        assert(approximatelyEqual(vessel.getPosition().y, 0.0));
+    }
+
+    // Test 10: InvalidInput for negative elapsed time.
+    {
+        Vessel vessel("Test", {0.0, 0.0}, 10.0, 0.0);
+
+        Route route;
+        route.addWaypoint({0.0, 10.0});
+
+        NavigationStatus status =
+            NavigationController::navigateRoute(vessel, route, -1.0);
+
+        assert(status == NavigationStatus::InvalidInput);
+        assert(route.completedCount() == 0);
+        assert(approximatelyEqual(vessel.getPosition().y, 0.0));
+        assert(approximatelyEqual(vessel.getSpeed(), 10.0));
+    }
+
+    // Test 11: InvalidInput for NaN elapsed time.
+    {
+        Vessel vessel("Test", {0.0, 0.0}, 10.0, 0.0);
+
+        Route route;
+        route.addWaypoint({0.0, 10.0});
+
+        NavigationStatus status =
+            NavigationController::navigateRoute(
+                vessel,
+                route,
+                std::nan(""));
+
+        assert(status == NavigationStatus::InvalidInput);
+        assert(route.completedCount() == 0);
+        assert(approximatelyEqual(vessel.getPosition().y, 0.0));
+    }
+
+    // Test 12: Empty route is immediately completed.
+    {
+        Vessel vessel("Test", {0.0, 0.0}, 10.0, 0.0);
+        Route route;
+
+        NavigationStatus status =
+            NavigationController::navigateRoute(vessel, route, 1.0);
+
+        assert(status == NavigationStatus::Completed);
+        assert(route.isComplete());
+        assert(approximatelyEqual(vessel.getSpeed(), 0.0));
+    }
+
+    std::cout << "All 12 route tests passed!\n";
     return 0;
 }
