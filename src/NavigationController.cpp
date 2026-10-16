@@ -166,98 +166,124 @@ void NavigationController::navigateTo(
      */
 }
 
+
 /*
  * navigateRoute()
  *
- * Advances the vessel through an ordered route.
+ * Advances the vessel through an ordered sequence of
+ * waypoints and reports the outcome of the update.
  *
- * Each waypoint is processed using the remaining simulation
- * time. When an intermediate waypoint is reached, the vessel
- * continues toward the next one at its current speed.
+ * Possible outcomes:
+ * - InProgress: Waypoints remain and navigation can continue.
+ * - Completed: All waypoints have been reached.
+ * - Stalled: Waypoints remain but the vessel has no speed.
+ * - InvalidInput: The requested elapsed time is invalid.
  *
- * Assumptions:
- * - Constant speed during each navigation update.
- * - Instantaneous heading changes at waypoints.
- * - No obstacles, currents, or acceleration.
+ * The controller preserves unused simulation time when
+ * an intermediate waypoint is reached.
  */
-void NavigationController::navigateRoute(
-    Vessel &vessel,
-    Route &route,
-    double elapsedHours)
-{
-    if (!std::isfinite(elapsedHours) || elapsedHours < 0.0)
-    {
-        throw std::invalid_argument("Invalid elapsed time");
+NavigationStatus NavigationController::navigateRoute(
+    Vessel& vessel,
+    Route& route,
+    double elapsedHours
+) {
+    /*
+     * Validate the simulation time before modifying
+     * vessel or route state.
+     */
+    if (!std::isfinite(elapsedHours) || elapsedHours < 0.0) {
+        return NavigationStatus::InvalidInput;
     }
 
     double remainingHours = elapsedHours;
 
-    // An empty or previously completed route requires no travel.
-    if (route.isComplete())
-    {
+    /*
+     * A completed route requires no further movement.
+     * Stop the vessel and report completion.
+     */
+    if (route.isComplete()) {
         vessel.setSpeed(0.0);
-        return;
+        return NavigationStatus::Completed;
     }
 
     /*
-     * A stopped vessel cannot travel toward a waypoint.
-     * Reject that condition unless already at the waypoint.
+     * Process as many waypoints as possible within
+     * the available simulation time.
      */
-    while (!route.isComplete())
-    {
+    while (!route.isComplete()) {
         const Position destination = route.currentWaypoint();
         const Position current = vessel.getPosition();
 
         const double distance =
             calculateDistance(current, destination);
 
-        // Advance past a waypoint we're already occupying.
-        if (distance < EPSILON)
-        {
+        /*
+         * If the vessel is already at the waypoint,
+         * advance without consuming simulation time.
+         */
+        if (distance < EPSILON) {
             route.advance();
             continue;
         }
 
+        /*
+         * A stopped vessel cannot travel to a waypoint
+         * that is still some distance away.
+         */
         const double speed = vessel.getSpeed();
 
-        if (speed <= 0.0 || remainingHours <= 0.0)
-        {
-            break;
+        if (speed <= 0.0) {
+            return NavigationStatus::Stalled;
         }
 
-        // Turn directly toward the current waypoint.
-        vessel.setHeading(
-            calculateBearing(current, destination));
+        /*
+         * No simulation time remains. Navigation is
+         * healthy, but must continue in a future update.
+         */
+        if (remainingHours <= 0.0) {
+            return NavigationStatus::InProgress;
+        }
 
-        // Calculate the time required to reach it.
+        /*
+         * Calculate the required bearing and turn
+         * the vessel toward the active waypoint.
+         */
+        vessel.setHeading(
+            calculateBearing(current, destination)
+        );
+
+        /*
+         * Calculate the time required to reach the
+         * current waypoint at the vessel's speed.
+         */
         const double travelHours = distance / speed;
 
-        if (travelHours <= remainingHours)
-        {
+        if (travelHours <= remainingHours) {
             /*
-             * We can reach this waypoint during the
-             * current simulation update.
+             * Enough time remains to reach this waypoint.
+             * Move there, subtract the travel time, and
+             * advance to the next waypoint.
              */
             vessel.update(travelHours);
 
             remainingHours -= travelHours;
             route.advance();
-        }
-        else
-        {
+        } else {
             /*
-             * Not enough time remains to reach the waypoint.
-             * Move partway and resume on the next update.
+             * Not enough time to reach the waypoint.
+             * Move partway and wait for the next update.
              */
             vessel.update(remainingHours);
-            remainingHours = 0.0;
-            break;
+
+            return NavigationStatus::InProgress;
         }
     }
 
-    // Stop only after the entire route is completed.
-    if (route.isComplete())
-    {
-        vessel.setSpeed(0.0);
-    }
+    /*
+     * Reaching this point means all waypoints have
+     * been completed.
+     */
+    vessel.setSpeed(0.0);
+
+    return NavigationStatus::Completed;
 }

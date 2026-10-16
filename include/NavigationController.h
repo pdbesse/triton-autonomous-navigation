@@ -3,6 +3,7 @@
 
 #include "Route.h"
 #include "Vessel.h"
+#include "NavigationStatus.h"
 
 /*
  * NavigationController
@@ -19,19 +20,18 @@
  *
  * Headings are measured clockwise from North.
  */
-class NavigationController {
+class NavigationController
+{
 public:
     // Straight-line distance between two positions, in NM.
     static double calculateDistance(
         Position start,
-        Position destination
-    );
+        Position destination);
 
     // Bearing clockwise from North, in degrees.
     static double calculateBearing(
         Position start,
-        Position destination
-    );
+        Position destination);
 
     /*
      * Navigate toward one waypoint.
@@ -39,10 +39,9 @@ public:
      * Stops the vessel when the destination is reached.
      */
     static void navigateTo(
-        Vessel& vessel,
+        Vessel &vessel,
         Position destination,
-        double elapsedHours
-    );
+        double elapsedHours);
 
     /*
      * Navigate through multiple waypoints.
@@ -52,9 +51,8 @@ public:
      *
      * Stops the vessel after the final waypoint.
      */
-    static void navigateRoute(
-        Vessel& vessel,
-        Route& route,
-        double elapsedHours
-    );
+    static NavigationStatus navigateRoute(
+        Vessel &vessel,
+        Route &route,
+        double elapsedHours);
 };

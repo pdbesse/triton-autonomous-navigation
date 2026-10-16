@@ -46,26 +46,57 @@ int main() {
 
     int step = 0;
 
-    while (!route.isComplete()) {
-        ++step;
+    
+/*
+ * Continue simulating until navigation completes
+ * or an error prevents further progress.
+ */
+while (true) {
+    ++step;
 
-        std::cout << "\n--- Simulation step "
-                  << step << " ---\n";
+    std::cout << "\n--- Simulation step "
+              << step << " ---\n";
 
+    const NavigationStatus status =
         NavigationController::navigateRoute(
             triton,
             route,
             TIME_STEP_HOURS
         );
 
-        triton.displayStatus();
+    triton.displayStatus();
 
-        std::cout << "Waypoints completed: "
-                  << route.completedCount()
-                  << "/"
-                  << route.waypointCount()
-                  << "\n";
+    std::cout << "Waypoints completed: "
+              << route.completedCount()
+              << "/"
+              << route.waypointCount()
+              << "\n";
+
+    /*
+     * Handle the result explicitly rather than assuming
+     * that the vessel always makes progress.
+     */
+    switch (status) {
+        case NavigationStatus::Completed:
+            std::cout << "\nRoute complete!\n";
+            return 0;
+
+        case NavigationStatus::Stalled:
+            std::cerr
+                << "\nNavigation stalled: vessel has no speed.\n";
+            return 1;
+
+        case NavigationStatus::InvalidInput:
+            std::cerr
+                << "\nNavigation error: invalid input.\n";
+            return 1;
+
+        case NavigationStatus::InProgress:
+            // Continue to the next simulation interval.
+            break;
     }
+}
+
 
     std::cout << "\nRoute complete!\n";
 
