@@ -1,157 +1,205 @@
 
 #include "NavigationController.h"
+#include "TestUtils.h"
 #include "Vessel.h"
 
-#include <cassert>
-#include <cmath>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 
-namespace {
-    /*
-     * Tolerance for comparing navigation results.
-     *
-     * Navigation involves trigonometry, so small
-     * floating-point differences are expected.
-     */
-    constexpr double TOLERANCE = 1e-6;
-
-    bool approximatelyEqual(double a, double b) {
-        return std::abs(a - b) < TOLERANCE;
-    }
-}
-
 /*
- * Navigation test executable.
+ * NavigationTests
+ * ---------------
+ * Verifies single-waypoint navigation behavior.
  *
- * Each scoped block creates independent test data.
- * This avoids sharing mutable vessel state between tests.
+ * All checks use TestUtils, which remains active in
+ * both Debug and Release configurations.
+ *
+ * Coordinates are in nautical miles.
+ * Headings are measured clockwise from North.
  */
 int main() {
 
-    /*
-     * Test 1: Distance calculation
-     *
-     * The points (0,0) and (6,8) are 10 NM apart.
-     * This verifies the Pythagorean distance calculation.
-     */
+    // Test 1: Calculate the distance of a 6-8-10 triangle.
     {
-        Position start{0.0, 0.0};
-        Position destination{6.0, 8.0};
+        const Position start{0.0, 0.0};
+        const Position destination{6.0, 8.0};
 
-        assert(approximatelyEqual(
-            NavigationController::calculateDistance(start, destination),
-            10.0
-        ));
+        TestUtils::requireNear(
+            NavigationController::calculateDistance(
+                start, destination
+            ),
+            10.0,
+            "Distance should equal 10 NM"
+        );
     }
 
-    /*
-     * Test 2: Cardinal bearings
-     *
-     * Verify that bearings follow the nautical convention:
-     * North = 0, East = 90, South = 180, West = 270.
-     */
+    // Test 2: Verify the four cardinal bearings.
     {
-        Position start{0.0, 0.0};
+        const Position start{0.0, 0.0};
 
-        assert(approximatelyEqual(
-            NavigationController::calculateBearing(start, {0.0, 10.0}),
-            0.0
-        ));
+        TestUtils::requireNear(
+            NavigationController::calculateBearing(
+                start, {0.0, 10.0}
+            ),
+            0.0,
+            "North bearing should be 0 degrees"
+        );
 
-        assert(approximatelyEqual(
-            NavigationController::calculateBearing(start, {10.0, 0.0}),
-            90.0
-        ));
+        TestUtils::requireNear(
+            NavigationController::calculateBearing(
+                start, {10.0, 0.0}
+            ),
+            90.0,
+            "East bearing should be 90 degrees"
+        );
 
-        assert(approximatelyEqual(
-            NavigationController::calculateBearing(start, {0.0, -10.0}),
-            180.0
-        ));
+        TestUtils::requireNear(
+            NavigationController::calculateBearing(
+                start, {0.0, -10.0}
+            ),
+            180.0,
+            "South bearing should be 180 degrees"
+        );
 
-        assert(approximatelyEqual(
-            NavigationController::calculateBearing(start, {-10.0, 0.0}),
-            270.0
-        ));
+        TestUtils::requireNear(
+            NavigationController::calculateBearing(
+                start, {-10.0, 0.0}
+            ),
+            270.0,
+            "West bearing should be 270 degrees"
+        );
     }
 
-    /*
-     * Test 3: Waypoint arrival without overshoot
-     *
-     * Vessel speed: 12 knots
-     * Waypoint distance: 10 NM
-     * Available time: 1 hour
-     *
-     * The vessel could travel 12 NM but must stop
-     * after reaching the waypoint at (6,8).
-     */
+    // Test 3: Arrive at a waypoint without overshooting.
     {
-        Vessel vessel("Test Vessel", {0.0, 0.0}, 12.0, 0.0);
+        Vessel vessel("Test", {0.0, 0.0}, 12.0, 0.0);
 
-        NavigationController::navigateTo(vessel, {6.0, 8.0}, 1.0);
+        NavigationController::navigateTo(
+            vessel, {6.0, 8.0}, 1.0
+        );
 
-        Position finalPosition = vessel.getPosition();
+        const Position p = vessel.getPosition();
 
-        assert(approximatelyEqual(finalPosition.x, 6.0));
-        assert(approximatelyEqual(finalPosition.y, 8.0));
-        assert(approximatelyEqual(vessel.getSpeed(), 0.0));
+        TestUtils::requireNear(
+            p.x, 6.0, "Arrival X coordinate"
+        );
+
+        TestUtils::requireNear(
+            p.y, 8.0, "Arrival Y coordinate"
+        );
+
+        TestUtils::requireNear(
+            vessel.getSpeed(), 0.0,
+            "Vessel must stop after waypoint arrival"
+        );
     }
 
-    /*
-     * Test 4: Partial navigation
-     *
-     * A vessel traveling at 10 knots for one hour
-     * cannot reach a waypoint 20 NM away.
-     *
-     * It should advance 10 NM and retain its speed.
-     */
+    // Test 4: Partial movement retains cruising speed.
     {
-        Vessel vessel("Test Vessel", {0.0, 0.0}, 10.0, 0.0);
+        Vessel vessel("Test", {0.0, 0.0}, 10.0, 0.0);
 
-        NavigationController::navigateTo(vessel, {0.0, 20.0}, 1.0);
+        NavigationController::navigateTo(
+            vessel, {0.0, 20.0}, 1.0
+        );
 
-        Position finalPosition = vessel.getPosition();
+        const Position p = vessel.getPosition();
 
-        assert(approximatelyEqual(finalPosition.x, 0.0));
-        assert(approximatelyEqual(finalPosition.y, 10.0));
-        assert(approximatelyEqual(vessel.getSpeed(), 10.0));
+        TestUtils::requireNear(
+            p.x, 0.0, "Partial navigation X coordinate"
+        );
+
+        TestUtils::requireNear(
+            p.y, 10.0, "Partial navigation Y coordinate"
+        );
+
+        TestUtils::requireNear(
+            vessel.getSpeed(), 10.0,
+            "Partial navigation must preserve speed"
+        );
     }
 
-    /*
-     * Test 5: Already at destination
-     *
-     * The vessel starts at the requested waypoint.
-     * Navigation should stop it without moving.
-     */
+    // Test 5: Already at the waypoint.
     {
-        Vessel vessel("Test Vessel", {5.0, 5.0}, 10.0, 90.0);
+        Vessel vessel("Test", {5.0, 5.0}, 10.0, 90.0);
 
-        NavigationController::navigateTo(vessel, {5.0, 5.0}, 1.0);
+        NavigationController::navigateTo(
+            vessel, {5.0, 5.0}, 1.0
+        );
 
-        assert(approximatelyEqual(vessel.getSpeed(), 0.0));
+        TestUtils::requireNear(
+            vessel.getSpeed(), 0.0,
+            "Vessel should stop when already at destination"
+        );
     }
 
-    /*
-     * Test 6: Invalid elapsed time
-     *
-     * Verify that navigation rejects negative time
-     * with the expected exception type.
-     */
+    // Test 6: Reject negative elapsed time.
     {
-        Vessel vessel("Test Vessel", {0.0, 0.0}, 10.0, 0.0);
-
-        bool threwException = false;
+        Vessel vessel("Test", {0.0, 0.0}, 10.0, 0.0);
+        bool threw = false;
 
         try {
-            NavigationController::navigateTo(vessel, {10.0, 0.0}, -1.0);
+            NavigationController::navigateTo(
+                vessel, {10.0, 0.0}, -1.0
+            );
         } catch (const std::invalid_argument&) {
-            threwException = true;
+            threw = true;
         }
 
-        assert(threwException);
+        TestUtils::require(
+            threw,
+            "Navigation must reject negative elapsed time"
+        );
     }
 
-    std::cout << "All navigation tests passed!\n";
+    // Test 7: Reject NaN elapsed time.
+    {
+        Vessel vessel("Test", {0.0, 0.0}, 10.0, 0.0);
+        bool threw = false;
+
+        try {
+            NavigationController::navigateTo(
+                vessel,
+                {10.0, 0.0},
+                std::numeric_limits<double>::quiet_NaN()
+            );
+        } catch (const std::invalid_argument&) {
+            threw = true;
+        }
+
+        TestUtils::require(
+            threw,
+            "Navigation must reject NaN elapsed time"
+        );
+    }
+
+    // Test 8: Zero elapsed time causes no movement.
+    {
+        Vessel vessel("Test", {0.0, 0.0}, 10.0, 0.0);
+
+        NavigationController::navigateTo(
+            vessel, {10.0, 0.0}, 0.0
+        );
+
+        const Position p = vessel.getPosition();
+
+        TestUtils::requireNear(
+            p.x, 0.0,
+            "Zero elapsed time must not change X"
+        );
+
+        TestUtils::requireNear(
+            p.y, 0.0,
+            "Zero elapsed time must not change Y"
+        );
+
+        TestUtils::requireNear(
+            vessel.getSpeed(), 10.0,
+            "Zero elapsed time must preserve speed"
+        );
+    }
+
+    std::cout << "All 8 navigation tests passed!\n";
 
     return 0;
 }
