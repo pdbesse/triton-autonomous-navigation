@@ -26,6 +26,7 @@ add_library(triton_core
     src/Vessel.cpp
     src/NavigationController.cpp
     src/Route.cpp
+    src/Obstacle.cpp
 )
 
 # Make public header files available to triton_core and
