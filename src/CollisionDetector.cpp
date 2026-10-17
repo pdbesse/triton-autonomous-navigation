@@ -1,8 +1,8 @@
-
 #include "CollisionDetector.h"
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 
 /*
@@ -37,77 +37,153 @@ namespace
 
 } // namespace
 
+
 /*
- * Calculate the shortest distance between a
- * point and a finite line segment.
+ * Calculate the minimum distance between a point
+ * and a finite line segment.
  *
- * The segment extends from A (start) to B (end).
- * The query point is P.
+ * Numerical strategy:
  *
- * We project P onto the line through A and B.
+ * 1. Validate the input coordinates.
+ * 2. Subtract the segment's starting position
+ *    to work in a local coordinate system.
+ * 3. Normalize local differences before projection.
+ * 4. Calculate the closest point on the segment.
+ * 5. Convert the result back to nautical miles.
  *
- * The projection parameter is:
+ * This avoids precision loss from normalizing
+ * large absolute coordinates.
  *
- * t = dot(P - A, B - A) / |B - A|^2
- *
- * We clamp t to [0, 1] because the path is
- * a finite segment rather than an infinite line.
- *
- * t = 0 means the closest point is A.
- * t = 1 means the closest point is B.
- * 0 < t < 1 means the closest point lies
- * somewhere between A and B.
+ * For extreme coordinates, we use scaled
+ * subtraction to avoid overflow.
  */
 double CollisionDetector::distanceToSegment(
     Position start,
     Position end,
-    Position point)
+    Position point
+)
 {
-    // Reject invalid coordinates.
     if (!isValidPosition(start) ||
         !isValidPosition(end) ||
-        !isValidPosition(point))
-    {
+        !isValidPosition(point)) {
         throw std::invalid_argument(
-            "Collision detection requires finite coordinates");
+            "Collision detection requires finite coordinates"
+        );
     }
 
-    // Vector from start to end.
-    const double dx = end.x - start.x;
-    const double dy = end.y - start.y;
+    /*
+     * Scale only when subtraction could overflow.
+     *
+     * Using half the largest double as a threshold
+     * lets us preserve normal coordinate differences.
+     */
+    const double maxValue =
+        std::numeric_limits<double>::max();
 
-    // Squared length of the segment.
-    const double lengthSquared = dx * dx + dy * dy;
+    const double largestCoordinate = std::max({
+        std::abs(start.x),
+        std::abs(start.y),
+        std::abs(end.x),
+        std::abs(end.y),
+        std::abs(point.x),
+        std::abs(point.y)
+    });
 
-    // A zero-length segment is a single point.
-    if (lengthSquared == 0.0)
-    {
-        return std::hypot(
-            point.x - start.x,
-            point.y - start.y);
+    /*
+     * Use unscaled local coordinates for ordinary
+     * values and scaled coordinates for extremes.
+     */
+    const double scale =
+        largestCoordinate > maxValue / 4.0
+            ? largestCoordinate
+            : 1.0;
+
+    const double ax = start.x / scale;
+    const double ay = start.y / scale;
+
+    const double bx = end.x / scale;
+    const double by = end.y / scale;
+
+    const double px = point.x / scale;
+    const double py = point.y / scale;
+
+    /*
+     * Translate the coordinate system so that
+     * the segment starts at the origin.
+     */
+    const double dx = bx - ax;
+    const double dy = by - ay;
+
+    const double qx = px - ax;
+    const double qy = py - ay;
+
+    /*
+     * Normalize the local direction vector.
+     *
+     * std::hypot handles the magnitude more
+     * robustly than squaring each component.
+     */
+    const double segmentLength = std::hypot(dx, dy);
+
+    if (segmentLength == 0.0) {
+
+        const double distance =
+            std::hypot(qx, qy) * scale;
+
+        if (!std::isfinite(distance)) {
+            throw std::overflow_error(
+                "Collision distance exceeds supported range"
+            );
+        }
+
+        return distance;
     }
 
-    // Vector from segment start to query point.
-    const double px = point.x - start.x;
-    const double py = point.y - start.y;
+    const double ux = dx / segmentLength;
+    const double uy = dy / segmentLength;
 
-    // Project the point onto the segment's line.
-    const double dotProduct = px * dx + py * dy;
+    /*
+     * Project the point onto the segment's
+     * unit direction vector.
+     */
+    const double projection =
+        qx * ux + qy * uy;
 
-    // Calculate the projection parameter.
-    const double t = std::max(
+    /*
+     * Restrict the projection to the segment.
+     */
+    const double alongSegment = std::max(
         0.0,
-        std::min(1.0, dotProduct / lengthSquared));
+        std::min(projection, segmentLength)
+    );
 
-    // Find the closest point on the segment.
-    const double closestX = start.x + t * dx;
-    const double closestY = start.y + t * dy;
+    /*
+     * Calculate the vector from the closest
+     * point on the segment to the query point.
+     */
+    const double closestDx =
+        qx - alongSegment * ux;
 
-    // Return the distance to that point.
-    return std::hypot(
-        point.x - closestX,
-        point.y - closestY);
+    const double closestDy =
+        qy - alongSegment * uy;
+
+    const double normalizedDistance = std::hypot(
+        closestDx,
+        closestDy
+    );
+
+    const double distance =
+        normalizedDistance * scale;
+
+    if (!std::isfinite(distance)) {
+        throw std::overflow_error(
+            "Collision distance exceeds supported range"
+        );
+    }
+
+    return distance;
 }
+
 
 /*
  * Check whether a navigation segment intersects
