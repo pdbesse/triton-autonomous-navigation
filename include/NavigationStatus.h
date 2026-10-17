@@ -14,7 +14,8 @@
  * and prevents callers from accidentally treating
  * different status types as interchangeable.
  */
-enum class NavigationStatus {
+enum class NavigationStatus
+{
     /*
      * Navigation advanced successfully, but at least
      * one waypoint remains.

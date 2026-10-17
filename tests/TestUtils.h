@@ -21,7 +21,8 @@
  * CTest detects that nonzero exit status and reports
  * the corresponding test suite as failed.
  */
-namespace TestUtils {
+namespace TestUtils
+{
 
     /*
      * require()
@@ -33,12 +34,12 @@ namespace TestUtils {
      */
     inline void require(
         bool condition,
-        const std::string& message
-    ) {
-        if (!condition) {
+        const std::string &message)
+    {
+        if (!condition)
+        {
             throw std::runtime_error(
-                "TEST FAILED: " + message
-            );
+                "TEST FAILED: " + message);
         }
     }
 
@@ -57,8 +58,8 @@ namespace TestUtils {
     inline bool approximatelyEqual(
         double actual,
         double expected,
-        double tolerance = 1e-6
-    ) {
+        double tolerance = 1e-6)
+    {
         return std::isfinite(actual) &&
                std::isfinite(expected) &&
                std::abs(actual - expected) <= tolerance;
@@ -76,11 +77,12 @@ namespace TestUtils {
     inline void requireNear(
         double actual,
         double expected,
-        const std::string& message,
-        double tolerance = 1e-6
-    ) {
+        const std::string &message,
+        double tolerance = 1e-6)
+    {
         if (!approximatelyEqual(
-                actual, expected, tolerance)) {
+                actual, expected, tolerance))
+        {
 
             std::ostringstream error;
 

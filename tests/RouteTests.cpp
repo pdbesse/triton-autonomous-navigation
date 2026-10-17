@@ -18,7 +18,8 @@
  * All checks use TestUtils and remain active in
  * both Debug and Release builds.
  */
-int main() {
+int main()
+{
 
     // Test 1: An empty route is already complete.
     {
@@ -26,18 +27,15 @@ int main() {
 
         TestUtils::require(
             route.isComplete(),
-            "An empty route should be complete"
-        );
+            "An empty route should be complete");
 
         TestUtils::require(
             route.waypointCount() == 0,
-            "An empty route should contain zero waypoints"
-        );
+            "An empty route should contain zero waypoints");
 
         TestUtils::require(
             route.completedCount() == 0,
-            "An empty route should have zero completed waypoints"
-        );
+            "An empty route should have zero completed waypoints");
     }
 
     // Test 2: Waypoints are stored and visited in order.
@@ -48,47 +46,39 @@ int main() {
 
         TestUtils::require(
             !route.isComplete(),
-            "Route should not be complete before visiting waypoints"
-        );
+            "Route should not be complete before visiting waypoints");
 
         TestUtils::require(
             route.waypointCount() == 2,
-            "Route should contain two waypoints"
-        );
+            "Route should contain two waypoints");
 
         const Position first = route.currentWaypoint();
 
         TestUtils::requireNear(
-            first.x, 3.0, "First waypoint X"
-        );
+            first.x, 3.0, "First waypoint X");
 
         TestUtils::requireNear(
-            first.y, 3.0, "First waypoint Y"
-        );
+            first.y, 3.0, "First waypoint Y");
 
         route.advance();
 
         const Position second = route.currentWaypoint();
 
         TestUtils::requireNear(
-            second.x, 8.0, "Second waypoint X"
-        );
+            second.x, 8.0, "Second waypoint X");
 
         TestUtils::requireNear(
-            second.y, 3.0, "Second waypoint Y"
-        );
+            second.y, 3.0, "Second waypoint Y");
 
         route.advance();
 
         TestUtils::require(
             route.isComplete(),
-            "Route should be complete after final waypoint"
-        );
+            "Route should be complete after final waypoint");
 
         TestUtils::require(
             route.completedCount() == 2,
-            "Two waypoints should be completed"
-        );
+            "Two waypoints should be completed");
     }
 
     // Test 3: Multiple waypoints can be completed in one update.
@@ -101,28 +91,23 @@ int main() {
 
         const NavigationStatus status =
             NavigationController::navigateRoute(
-                vessel, route, 1.0
-            );
+                vessel, route, 1.0);
 
         const Position p = vessel.getPosition();
 
         TestUtils::require(
             status == NavigationStatus::Completed,
-            "Route should complete within one hour"
-        );
+            "Route should complete within one hour");
 
         TestUtils::requireNear(
-            p.x, 4.0, "Multi-waypoint arrival X"
-        );
+            p.x, 4.0, "Multi-waypoint arrival X");
 
         TestUtils::requireNear(
-            p.y, 3.0, "Multi-waypoint arrival Y"
-        );
+            p.y, 3.0, "Multi-waypoint arrival Y");
 
         TestUtils::requireNear(
             vessel.getSpeed(), 0.0,
-            "Vessel should stop at final waypoint"
-        );
+            "Vessel should stop at final waypoint");
     }
 
     // Test 4: Partial navigation preserves route progress.
@@ -134,28 +119,23 @@ int main() {
 
         const NavigationStatus status =
             NavigationController::navigateRoute(
-                vessel, route, 0.5
-            );
+                vessel, route, 0.5);
 
         TestUtils::require(
             status == NavigationStatus::InProgress,
-            "Partial navigation should remain in progress"
-        );
+            "Partial navigation should remain in progress");
 
         TestUtils::require(
             route.completedCount() == 0,
-            "Waypoint should not be completed prematurely"
-        );
+            "Waypoint should not be completed prematurely");
 
         TestUtils::requireNear(
             vessel.getPosition().y, 5.0,
-            "Vessel should travel 5 NM"
-        );
+            "Vessel should travel 5 NM");
 
         TestUtils::requireNear(
             vessel.getSpeed(), 10.0,
-            "Cruising speed should remain unchanged"
-        );
+            "Cruising speed should remain unchanged");
     }
 
     // Test 5: Invalid waypoint coordinates are rejected.
@@ -163,19 +143,19 @@ int main() {
         Route route;
         bool threw = false;
 
-        try {
-            route.addWaypoint({
-                std::numeric_limits<double>::quiet_NaN(),
-                0.0
-            });
-        } catch (const std::invalid_argument&) {
+        try
+        {
+            route.addWaypoint({std::numeric_limits<double>::quiet_NaN(),
+                               0.0});
+        }
+        catch (const std::invalid_argument &)
+        {
             threw = true;
         }
 
         TestUtils::require(
             threw,
-            "Route must reject NaN waypoint coordinates"
-        );
+            "Route must reject NaN waypoint coordinates");
     }
 
     // Test 6: Advancing a completed route throws.
@@ -183,16 +163,18 @@ int main() {
         Route route;
         bool threw = false;
 
-        try {
+        try
+        {
             route.advance();
-        } catch (const std::out_of_range&) {
+        }
+        catch (const std::out_of_range &)
+        {
             threw = true;
         }
 
         TestUtils::require(
             threw,
-            "Advancing a completed route must throw"
-        );
+            "Advancing a completed route must throw");
     }
 
     // Test 7: Completed status after final waypoint.
@@ -204,23 +186,19 @@ int main() {
 
         const NavigationStatus status =
             NavigationController::navigateRoute(
-                vessel, route, 1.0
-            );
+                vessel, route, 1.0);
 
         TestUtils::require(
             status == NavigationStatus::Completed,
-            "Final waypoint should produce Completed"
-        );
+            "Final waypoint should produce Completed");
 
         TestUtils::require(
             route.isComplete(),
-            "Route should be complete"
-        );
+            "Route should be complete");
 
         TestUtils::requireNear(
             vessel.getPosition().y, 5.0,
-            "Final waypoint position"
-        );
+            "Final waypoint position");
     }
 
     // Test 8: InProgress when simulation time is insufficient.
@@ -232,13 +210,11 @@ int main() {
 
         const NavigationStatus status =
             NavigationController::navigateRoute(
-                vessel, route, 0.5
-            );
+                vessel, route, 0.5);
 
         TestUtils::require(
             status == NavigationStatus::InProgress,
-            "Insufficient time should produce InProgress"
-        );
+            "Insufficient time should produce InProgress");
     }
 
     // Test 9: Stalled when the vessel has zero speed.
@@ -250,18 +226,15 @@ int main() {
 
         const NavigationStatus status =
             NavigationController::navigateRoute(
-                vessel, route, 1.0
-            );
+                vessel, route, 1.0);
 
         TestUtils::require(
             status == NavigationStatus::Stalled,
-            "Stopped vessel should report Stalled"
-        );
+            "Stopped vessel should report Stalled");
 
         TestUtils::requireNear(
             vessel.getPosition().y, 0.0,
-            "Stalled vessel must not move"
-        );
+            "Stalled vessel must not move");
     }
 
     // Test 10: Negative time produces InvalidInput.
@@ -273,23 +246,19 @@ int main() {
 
         const NavigationStatus status =
             NavigationController::navigateRoute(
-                vessel, route, -1.0
-            );
+                vessel, route, -1.0);
 
         TestUtils::require(
             status == NavigationStatus::InvalidInput,
-            "Negative time must produce InvalidInput"
-        );
+            "Negative time must produce InvalidInput");
 
         TestUtils::require(
             route.completedCount() == 0,
-            "Invalid input must not advance route"
-        );
+            "Invalid input must not advance route");
 
         TestUtils::requireNear(
             vessel.getPosition().y, 0.0,
-            "Invalid input must not move vessel"
-        );
+            "Invalid input must not move vessel");
     }
 
     // Test 11: NaN time produces InvalidInput.
@@ -303,13 +272,11 @@ int main() {
             NavigationController::navigateRoute(
                 vessel,
                 route,
-                std::numeric_limits<double>::quiet_NaN()
-            );
+                std::numeric_limits<double>::quiet_NaN());
 
         TestUtils::require(
             status == NavigationStatus::InvalidInput,
-            "NaN time must produce InvalidInput"
-        );
+            "NaN time must produce InvalidInput");
     }
 
     // Test 12: Empty route immediately completes.
@@ -319,18 +286,15 @@ int main() {
 
         const NavigationStatus status =
             NavigationController::navigateRoute(
-                vessel, route, 1.0
-            );
+                vessel, route, 1.0);
 
         TestUtils::require(
             status == NavigationStatus::Completed,
-            "Empty route should produce Completed"
-        );
+            "Empty route should produce Completed");
 
         TestUtils::requireNear(
             vessel.getSpeed(), 0.0,
-            "Vessel should stop on completed route"
-        );
+            "Vessel should stop on completed route");
     }
 
     // Test 13: Zero elapsed time does not move the vessel.
@@ -342,18 +306,15 @@ int main() {
 
         const NavigationStatus status =
             NavigationController::navigateRoute(
-                vessel, route, 0.0
-            );
+                vessel, route, 0.0);
 
         TestUtils::require(
             status == NavigationStatus::InProgress,
-            "Zero elapsed time should remain InProgress"
-        );
+            "Zero elapsed time should remain InProgress");
 
         TestUtils::requireNear(
             vessel.getPosition().y, 0.0,
-            "Zero elapsed time must not move vessel"
-        );
+            "Zero elapsed time must not move vessel");
     }
 
     // Test 14: Already at a waypoint advances without travel.
@@ -366,23 +327,19 @@ int main() {
 
         const NavigationStatus status =
             NavigationController::navigateRoute(
-                vessel, route, 0.5
-            );
+                vessel, route, 0.5);
 
         TestUtils::require(
             status == NavigationStatus::Completed,
-            "Already reached waypoint should be skipped"
-        );
+            "Already reached waypoint should be skipped");
 
         TestUtils::require(
             route.completedCount() == 2,
-            "Both waypoints should be completed"
-        );
+            "Both waypoints should be completed");
 
         TestUtils::requireNear(
             vessel.getPosition().y, 8.0,
-            "Vessel should reach second waypoint"
-        );
+            "Vessel should reach second waypoint");
     }
 
     std::cout << "All 14 route tests passed!\n";

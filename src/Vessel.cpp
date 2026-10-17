@@ -10,7 +10,8 @@
  * Anonymous namespace:
  * Restricts PI to this translation unit (source file).
  */
-namespace {
+namespace
+{
     constexpr double PI = 3.14159265358979323846;
 }
 

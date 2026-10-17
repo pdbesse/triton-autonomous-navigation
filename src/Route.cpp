@@ -10,12 +10,13 @@
  * Reject non-finite coordinates because NaN and infinity
  * cannot represent valid positions in our simulation.
  */
-void Route::addWaypoint(Position waypoint) {
+void Route::addWaypoint(Position waypoint)
+{
     if (!std::isfinite(waypoint.x) ||
-        !std::isfinite(waypoint.y)) {
+        !std::isfinite(waypoint.y))
+    {
         throw std::invalid_argument(
-            "Invalid waypoint coordinates"
-        );
+            "Invalid waypoint coordinates");
     }
 
     waypoints_.push_back(waypoint);
@@ -27,18 +28,20 @@ void Route::addWaypoint(Position waypoint) {
  *
  * An empty route is considered complete.
  */
-bool Route::isComplete() const {
+bool Route::isComplete() const
+{
     return currentIndex_ >= waypoints_.size();
 }
 
 /*
  * Return the current waypoint without modifying the route.
  */
-Position Route::currentWaypoint() const {
-    if (isComplete()) {
+Position Route::currentWaypoint() const
+{
+    if (isComplete())
+    {
         throw std::out_of_range(
-            "No remaining waypoints"
-        );
+            "No remaining waypoints");
     }
 
     return waypoints_[currentIndex_];
@@ -50,20 +53,23 @@ Position Route::currentWaypoint() const {
  * This changes route progress only; it does not move
  * the vessel or change its speed.
  */
-void Route::advance() {
-    if (isComplete()) {
+void Route::advance()
+{
+    if (isComplete())
+    {
         throw std::out_of_range(
-            "Cannot advance a completed route"
-        );
+            "Cannot advance a completed route");
     }
 
     ++currentIndex_;
 }
 
-std::size_t Route::waypointCount() const {
+std::size_t Route::waypointCount() const
+{
     return waypoints_.size();
 }
 
-std::size_t Route::completedCount() const {
+std::size_t Route::completedCount() const
+{
     return currentIndex_;
 }

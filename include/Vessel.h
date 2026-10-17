@@ -18,7 +18,8 @@
  * This is a simplified local coordinate system, not GPS.
  * Latitude, longitude, and Earth's curvature are not yet modeled.
  */
-struct Position {
+struct Position
+{
     double x;
     double y;
 };
@@ -40,7 +41,8 @@ struct Position {
  * - Heading: degrees clockwise from North
  * - Time: hours
  */
-class Vessel {
+class Vessel
+{
 public:
     /*
      * Construct a vessel with its initial state.

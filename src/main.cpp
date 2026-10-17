@@ -14,15 +14,15 @@
  * The controller carries unused simulation time forward
  * whenever an intermediate waypoint is reached.
  */
-int main() {
+int main()
+{
     std::cout << "=== TRITON MULTI-WAYPOINT NAVIGATION ===\n\n";
 
     Vessel triton(
         "Triton USV-01",
         {0.0, 0.0},
         12.0,
-        0.0
-    );
+        0.0);
 
     Route route;
 
@@ -46,37 +46,37 @@ int main() {
 
     int step = 0;
 
-    
-/*
- * Continue simulating until navigation completes
- * or an error prevents further progress.
- */
-while (true) {
-    ++step;
-
-    std::cout << "\n--- Simulation step "
-              << step << " ---\n";
-
-    const NavigationStatus status =
-        NavigationController::navigateRoute(
-            triton,
-            route,
-            TIME_STEP_HOURS
-        );
-
-    triton.displayStatus();
-
-    std::cout << "Waypoints completed: "
-              << route.completedCount()
-              << "/"
-              << route.waypointCount()
-              << "\n";
-
     /*
-     * Handle the result explicitly rather than assuming
-     * that the vessel always makes progress.
+     * Continue simulating until navigation completes
+     * or an error prevents further progress.
      */
-    switch (status) {
+    while (true)
+    {
+        ++step;
+
+        std::cout << "\n--- Simulation step "
+                  << step << " ---\n";
+
+        const NavigationStatus status =
+            NavigationController::navigateRoute(
+                triton,
+                route,
+                TIME_STEP_HOURS);
+
+        triton.displayStatus();
+
+        std::cout << "Waypoints completed: "
+                  << route.completedCount()
+                  << "/"
+                  << route.waypointCount()
+                  << "\n";
+
+        /*
+         * Handle the result explicitly rather than assuming
+         * that the vessel always makes progress.
+         */
+        switch (status)
+        {
         case NavigationStatus::Completed:
             std::cout << "\nRoute complete!\n";
             return 0;
@@ -94,9 +94,8 @@ while (true) {
         case NavigationStatus::InProgress:
             // Continue to the next simulation interval.
             break;
+        }
     }
-}
-
 
     std::cout << "\nRoute complete!\n";
 

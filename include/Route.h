@@ -21,7 +21,8 @@
  * Route does not move the vessel. NavigationController
  * will remain responsible for guidance and movement.
  */
-class Route {
+class Route
+{
 public:
     // Add a waypoint to the end of the route.
     void addWaypoint(Position waypoint);

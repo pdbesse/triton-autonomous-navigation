@@ -21,8 +21,7 @@
 Obstacle::Obstacle(
     std::string name,
     Position position,
-    double radius
-)
+    double radius)
     : name_(std::move(name)),
       position_(position),
       radius_(radius)
@@ -30,23 +29,23 @@ Obstacle::Obstacle(
     // Coordinates must be finite real numbers.
     // NaN and infinity are not valid positions.
     if (!std::isfinite(position_.x) ||
-        !std::isfinite(position_.y)) {
+        !std::isfinite(position_.y))
+    {
         throw std::invalid_argument(
-            "Obstacle position must contain finite coordinates"
-        );
+            "Obstacle position must contain finite coordinates");
     }
 
     // Radius cannot be negative, NaN, or infinity.
     // A zero-radius obstacle represents a point.
-    if (!std::isfinite(radius_) || radius_ < 0.0) {
+    if (!std::isfinite(radius_) || radius_ < 0.0)
+    {
         throw std::invalid_argument(
-            "Obstacle radius must be finite and non-negative"
-        );
+            "Obstacle radius must be finite and non-negative");
     }
 }
 
 // Return the obstacle's name without making a copy.
-const std::string& Obstacle::getName() const
+const std::string &Obstacle::getName() const
 {
     return name_;
 }
@@ -78,10 +77,10 @@ double Obstacle::getRadius() const
 double Obstacle::distanceTo(Position position) const
 {
     if (!std::isfinite(position.x) ||
-        !std::isfinite(position.y)) {
+        !std::isfinite(position.y))
+    {
         throw std::invalid_argument(
-            "Distance query position must be finite"
-        );
+            "Distance query position must be finite");
     }
 
     const double dx = position.x - position_.x;
@@ -100,24 +99,23 @@ double Obstacle::distanceTo(Position position) const
  */
 bool Obstacle::contains(
     Position position,
-    double safetyMargin
-) const
+    double safetyMargin) const
 {
     // Reject invalid safety margins.
     if (!std::isfinite(safetyMargin) ||
-        safetyMargin < 0.0) {
+        safetyMargin < 0.0)
+    {
         throw std::invalid_argument(
-            "Safety margin must be finite and non-negative"
-        );
+            "Safety margin must be finite and non-negative");
     }
 
     // Prevent overflow when combining large values.
     const double effectiveRadius = radius_ + safetyMargin;
 
-    if (!std::isfinite(effectiveRadius)) {
+    if (!std::isfinite(effectiveRadius))
+    {
         throw std::invalid_argument(
-            "Effective obstacle radius is too large"
-        );
+            "Effective obstacle radius is too large");
     }
 
     // A point is inside if its distance from the
