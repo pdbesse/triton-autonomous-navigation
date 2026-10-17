@@ -99,6 +99,18 @@ add_test(
     COMMAND route_tests
 )
 
+# Build the obstacle test executable.
+add_executable(obstacle_tests
+    tests/ObstacleTests.cpp
+)
+
+# Link the tests against the Triton core library.
+target_link_libraries(obstacle_tests PRIVATE triton_core)
+
+# Register the executable with CTest.
+add_test(NAME ObstacleTests COMMAND obstacle_tests)
+
+
 
 # ------------------------------------------------------------
 # Compiler diagnostics
