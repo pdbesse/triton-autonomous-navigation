@@ -27,6 +27,7 @@ add_library(triton_core
     src/NavigationController.cpp
     src/Route.cpp
     src/Obstacle.cpp
+    src/CollisionDetector.cpp
 )
 
 # Make public header files available to triton_core and
@@ -109,6 +110,24 @@ target_link_libraries(obstacle_tests PRIVATE triton_core)
 
 # Register the executable with CTest.
 add_test(NAME ObstacleTests COMMAND obstacle_tests)
+
+
+# Build the collision detection test executable.
+add_executable(collision_detector_tests
+    tests/CollisionDetectorTests.cpp
+)
+
+# Link against the core navigation library.
+target_link_libraries(
+    collision_detector_tests PRIVATE triton_core
+)
+
+# Register with CTest.
+add_test(
+    NAME CollisionDetectorTests
+    COMMAND collision_detector_tests
+)
+
 
 
 
